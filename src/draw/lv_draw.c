@@ -493,9 +493,13 @@ void * lv_draw_layer_alloc_buf(lv_layer_t * layer)
 
 #if LV_DRAW_LAYER_MAX_MEMORY > 0
     /* Do not allocate the layer if the sum of allocated layer sizes
-     * will exceed `LV_DRAW_LAYER_MAX_MEMORY` */
-    if((_draw_info.used_memory_for_layers + layer_size_byte) > LV_DRAW_LAYER_MAX_MEMORY) {
+     * will exceed `LV_DRAW_LAYER_MAX_MEMORY`. A layer that is larger than the
+     * whole budget is still allocated when no other layer holds memory:
+     * waiting would never free enough for it, and rendering would wait forever. */
+    if(_draw_info.used_memory_for_layers > 0 &&
+       (_draw_info.used_memory_for_layers + layer_size_byte) > LV_DRAW_LAYER_MAX_MEMORY) {
         LV_LOG_WARN("LV_DRAW_LAYER_MAX_MEMORY was reached when allocating the layer.");
+        LV_PROFILER_DRAW_END;
         return NULL;
     }
 #endif
